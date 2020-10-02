@@ -266,7 +266,7 @@ INSERT into `user` (`id`, `name`, `pwd`) VALUES
       <!--所有的xml配置都是空格里面加东西，属性-->
       <!--resultType现在先写类名，不要写集合-->
   
-      <select id="getUserList" resultType="com.lihe.pojo.User">
+      <select id="getUserList" resultType="com.User">
           select * from mybatis.user;
       </select>
   </mapper>
@@ -337,7 +337,7 @@ namespace中的包名要和Dao/Mapper接口的包名一直！
 2. 编写对应的mapper中的sql语句
 
    ```xml
-   <select id="getUserByID" parameterType="int" resultType="com.lihe.pojo.User">
+   <select id="getUserByID" parameterType="int" resultType="com.User">
        select * from mybatis.user where id = #{id}
    </select>
    ```
@@ -364,7 +364,7 @@ namespace中的包名要和Dao/Mapper接口的包名一直！
 ### 3.3 Insert
 
 ```xml
-<insert id="addUser" parameterType="com.lihe.pojo.User">
+<insert id="addUser" parameterType="com.User">
     insert into mybatis.user (id, name, pwd) value (#{id}, #{name}, #{pwd});
 </insert>
 ```
@@ -374,7 +374,7 @@ namespace中的包名要和Dao/Mapper接口的包名一直！
 ### 3.4 Update
 
 ```xml
-<update id="updateUser" parameterType="com.lihe.pojo.User">
+<update id="updateUser" parameterType="com.User">
     update mybatis.user set name=#{name},pwd=#{pwd} =  where id = #{id};
 </update>
 ```
@@ -412,7 +412,7 @@ namespace中的包名要和Dao/Mapper接口的包名一直！
 
 可定制化，map传递参数，直接在sql中取出key即可！【parameterType="map"】
 
-对象传递参数，直接取对象的属性即可！【parameterType="com.lihe.pojo.User"】
+对象传递参数，直接取对象的属性即可！【parameterType="com.User"】
 
 只有一个参数的情况下，可以直接在sql中取到！【可以不写】
 
@@ -506,7 +506,7 @@ password=root
 
 ```xml
 <typeAliases>
-    <typeAlias type="com.lihe.pojo.User" alias="User"/>
+    <typeAlias type="com.User" alias="User"/>
 </typeAliases>
 ```
 
@@ -571,7 +571,7 @@ MapperResgistry：注册绑定我们的Mapper文件；
 
 ```xml
 <mappers>
-    <mapper class="com.lihe.dao.UserMapper"/>
+    <mapper class="com.UserMapper"/>
 </mappers>
 ```
 
@@ -656,7 +656,7 @@ public class User {
 - 起别名
 
   ```xml
-  <select id="getUserByID" parameterType="int" resultType="com.lihe.pojo.User">
+  <select id="getUserByID" parameterType="int" resultType="com.User">
       select id, name, pwd as password from mybatis.user where id = #{id}
   </select>
   ```
@@ -811,5 +811,187 @@ STDOUT_LOGGING 标准日志输出
    logger.error("error: 进入了testLog4j");
    ```
 
-4. 
 
+
+
+## 7. 分页
+
+**思考：为什么要分页？**
+
+- 减少数据的处理量
+
+
+
+### 7.1 **使用Limit分页**
+
+语法：
+
+```sql
+select * from user limit startIndex,pageSize;
+```
+
+使用MyBatis实现分页，核心就是SQL
+
+1. 接口
+
+   ```java
+   // 分页
+   List<User> getUserByLimit(Map<String, Integer> map);
+   ```
+
+2. Mapper.xml
+
+   ```xml
+   <!--    分页实现查询-->
+   <select id="getUserByLimit" parameterType="map" resultMap="UserMap">
+       SELECT * FROM user limit #{startIndex},#{pageSize}
+   </select>
+   ```
+
+3. 测试
+
+   ```java
+   @Test
+   public void getUserByLimit(){
+       SqlSession sqlSession = MyBatisUtils.getSqlSession();
+   
+       UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+       HashMap<String, Integer> map = new HashMap<String, Integer>();
+       map.put("startIndex", 0);
+       map.put("pageSize", 2);
+       List<User> userList = mapper.getUserByLimit(map);
+       for (User user : userList) {
+           System.out.println(user);
+       }
+   
+       sqlSession.close();
+   }
+   ```
+
+### 7.2 RowBounds分页
+
+面向对象思想，但是不建议使用
+
+不再使用SQL实现分页
+
+1. 接口
+
+   ```java
+   // 分页2
+   List<User> getUserByRowBounds();
+   ```
+
+2. MApper.xml
+
+   ```xml
+   <!--    分页2-->
+   <select id="getUserByLimit" resultMap="UserMap">
+       SELECT * FROM user
+   </select>
+   ```
+
+3. 测试
+
+   ```java
+   @Test
+   public void getUserByRowBounds(){
+       SqlSession sqlSession = MyBatisUtils.getSqlSession();
+   
+       // 通过RowBounds实现
+       RowBounds rowBounds = new RowBounds(1, 2);
+   
+       // 通过java代码层面实现分页
+       List<User> userList = sqlSession.selectList("com.UserMapper.getUserByRowBounds", null, rowBounds);
+   
+       for (User user : userList) {
+           System.out.println(user);
+       }
+   
+       sqlSession.close();
+   }
+   ```
+
+### 7.3 分页插件
+
+<img src="MyBatis.assets/image-20201002181628220.png" alt="image-20201002181628220" style="zoom: 50%;" />
+
+了解即可，玩意以后公司的架构师说要使用，你要知道他是什么东西！
+
+
+
+## 8. 使用注解开发
+
+### 8.1 面向接口编程
+
+- 大家之前都学过面向对象编程，也学习过接口，但在真正的开发中，很多时候我们会选择面向接口编程
+- **根本原因 :  解耦 , 可拓展 , 提高复用 , 分层开发中 , 上层不用管具体的实现 , 大家都遵守共同的标准 , 使得开发变得容易 , 规范性更好**
+- 在一个面向对象的系统中，系统的各种功能是由许许多多的不同对象协作完成的。在这种情况下，各个对象内部是如何实现自己的,对系统设计人员来讲就不那么重要了；
+- 而各个对象之间的协作关系则成为系统设计的关键。小到不同类之间的通信，大到各模块之间的交互，在系统设计之初都是要着重考虑的，这也是系统设计的主要工作内容。面向接口编程就是指按照这种思想来编程。
+
+
+
+**关于接口的理解**
+
+- 接口从更深层次的理解，应是**定义（规范，约束）与实现（名实分离的原则）的分离**。
+
+- 接口的本身反映了系统设计人员对系统的抽象理解。
+
+- 接口应有两类：
+
+- - 第一类是对一个个体的抽象，它可对应为一个抽象体(abstract class)；
+  - 第二类是对一个个体某一方面的抽象，即形成一个抽象面（interface）；
+
+- 一个体有可能有多个抽象面。抽象体与抽象面是有区别的。
+
+架构师（成千上万的接口）
+
+
+
+**三个面向区别**
+
+- 面向对象是指，我们考虑问题时，以对象为单位，考虑它的属性及方法 .
+- 面向过程是指，我们考虑问题时，以一个具体的流程（事务过程）为单位，考虑它的实现 .
+- 接口设计与非接口设计是针对复用技术而言的，与面向对象（过程）不是一个问题.更多的体现就是对系统整体的架构
+
+
+
+### 8.2 使用注解开发
+
+核心就是使用了反射
+
+1. 注解在接口上实现
+
+   ```java
+   @Select("select * from user")
+   List<User> getUsers();
+   ```
+
+2. 需要在核心配置文件中绑定接口
+
+   ```xml
+   <!--    绑定接口-->
+   <mappers>
+       <mapper class="com.lihe.dao.UserMapper"/>
+   </mappers>
+   ```
+
+3. 测试
+
+   ```java
+   @Test
+   public void UserMapper(){
+       SqlSession sqlSession = MyBatisUtils.getSqlSession();
+       // 底层主要应用反射
+       UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+       List<User> users = mapper.getUsers();
+   
+       for (User user : users) {
+           System.out.println(user);
+       }
+       sqlSession.close();
+   }
+   ```
+
+本质：反射机制的实现
+
+底层：动态代理！

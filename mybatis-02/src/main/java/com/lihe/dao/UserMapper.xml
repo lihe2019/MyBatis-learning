@@ -3,7 +3,7 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- namespace= 绑定一个对应的Dao/Mapper接口-->
-<mapper namespace="com.lihe.dao.UserMapper">
+<mapper namespace="com.UserMapper">
     <!--这里的id对应原来的方法名-->
     <!--所有的xml配置都是空格里面加东西，属性-->
     <!--resultType现在先写类名，不要写集合-->
@@ -19,15 +19,15 @@
         select * from mybatis.user
     </select>
 
-    <select id="getUserByID" parameterType="int" resultType="com.lihe.pojo.User">
+    <select id="getUserByID" parameterType="int" resultType="com.User">
         select * from mybatis.user where id = #{id}
     </select>
 
-    <insert id="addUser" parameterType="com.lihe.pojo.User">
+    <insert id="addUser" parameterType="com.User">
         insert into mybatis.user (id, name, pwd) value (#{id}, #{name}, #{pwd});
     </insert>
 
-    <update id="updateUser" parameterType="com.lihe.pojo.User">
+    <update id="updateUser" parameterType="com.User">
         update mybatis.user set name=#{name},pwd=#{pwd} =  where id = #{id};
     </update>
 

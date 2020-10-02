@@ -39,7 +39,7 @@
     <!-- 每一个Mapper.XML都需要在MyBatis核心配置文件中注册-->
     <mappers>
 <!--        <mapper resource="com/lihe/dao/USerMapper.xml"/>-->
-<!--        <mapper class="com.lihe.dao.UserMapper"/>-->
+<!--        <mapper class="com.UserMapper"/>-->
         <package name="com.lihe.dao"/>
     </mappers>
 

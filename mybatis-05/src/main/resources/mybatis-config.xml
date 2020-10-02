@@ -12,8 +12,8 @@
     
     <settings>
         <!--标准的日志实现-->
-<!--        <setting name="logImpl" value="STDOUT_LOGGING"/>-->
-        <setting name="logImpl" value="LOG4J"/>
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+
     </settings>
 
     <!--可以给实体类起别名-->
@@ -30,23 +30,11 @@
                 <property name="password" value="${password}"/>
             </dataSource>
         </environment>
-
-        <environment id="test">
-            <transactionManager type="JDBC"/>
-            <dataSource type="POOLED">
-                <property name="driver" value="com.mysql.jdbc.Driver"/>
-                <property name="url" value="jdbc:mysql://localhost:3306/mybatis?
-                useSSL=tue&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
-                <property name="username" value="root"/>
-                <property name="password" value="root"/>
-            </dataSource>
-        </environment>
     </environments>
-    <!-- 每一个Mapper.XML都需要在MyBatis核心配置文件中注册-->
+
+    <!--    绑定接口-->
     <mappers>
-<!--        <mapper resource="com/lihe/dao/USerMapper.xml"/>-->
-<!--        <mapper class="com.UserMapper"/>-->
-        <package name="com.lihe.dao"/>
+        <mapper class="com.lihe.dao.UserMapper"/>
     </mappers>
 
 </configuration>

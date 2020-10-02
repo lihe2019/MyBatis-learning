@@ -3,6 +3,7 @@ package com.lihe.dao;
 import com.lihe.pojo.User;
 
 import java.util.List;
+import java.util.Map;
 
 // Dao等价于MyBatis的mapper，以后写mapper
 public interface UserMapper {
@@ -22,5 +23,10 @@ public interface UserMapper {
     int updateUser(User user);
 
     int deleteUser(int id);
+
+    // 分页
+    List<User> getUserByLimit(Map<String, Integer> map);
+    // 分页2
+    List<User> getUserByRowBounds();
 
 }
