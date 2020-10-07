@@ -995,3 +995,371 @@ select * from user limit startIndex,pageSize;
 本质：反射机制的实现
 
 底层：动态代理！
+
+![image-20201003225616444](MyBatis.assets/image-20201003225616444.png)
+
+
+
+**MyBatis详细执行流程！**
+
+==这里还要再理解，看源码==
+
+
+
+### 8.3 CRUD
+
+我们可以在工具类
+
+
+
+## 9 Lombok
+
+- Project Lombok is a java library that automatically plugs into your editor and build tools, spicing up your java.
+- Never write another getter or equals method again, with one annotation your class has a fully featured builder, Automate your logging variables, and much more.
+
+使用步骤：
+
+1. 在IDEA中安装插件
+2. 在项目中导入lombok的jar包
+3. 
+
+```java
+@Getter and @Setter
+@FieldNameConstants
+@ToString
+@EqualsAndHashCode
+@AllArgsConstructor, @RequiredArgsConstructor and @NoArgsConstructor
+@Log, @Log4j, @Log4j2, @Slf4j, @XSlf4j, @CommonsLog, @JBossLog, @Flogger, @CustomLog
+@Data
+@Builder
+@SuperBuilder
+@Singular
+@Delegate
+@Value
+@Accessors
+@Wither
+@With
+@SneakyThrows
+@val
+@var
+experimental @var
+@UtilityClass
+```
+
+
+
+```java
+@Data:无参构造，get，set，tostring，hashcode，equals
+@AllArgsConstructor
+@NoArgsConstructor
+@EqualsAndHashCode
+@ToString
+```
+
+
+
+## 10 多对一
+
+- 多个学生对应一个老师
+- 对于学生这边而言，**关联**。。多个学生关联一个老师
+- 对于老师而言，**集合**，一对多
+
+SQL：
+
+```mysql
+use mybatis
+
+CREATE TABLE `teacher` (
+  `id` INT(10) NOT NULL,
+  `name` VARCHAR(30) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8
+
+INSERT INTO teacher(`id`, `name`) VALUES (1, '秦老师'); 
+
+
+CREATE TABLE `student` (
+  `id` INT(10) NOT NULL,
+  `name` VARCHAR(30) DEFAULT NULL,
+  `tid` INT(10) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fktid` (`tid`),
+  CONSTRAINT `fktid` FOREIGN KEY (`tid`) REFERENCES `teacher` (`id`)
+) ENGINE=INNODB DEFAULT CHARSET=utf8
+
+INSERT INTO `student` (`id`, `name`, `tid`) VALUES ('1', '小明', '1'); 
+INSERT INTO `student` (`id`, `name`, `tid`) VALUES ('2', '小红', '1'); 
+INSERT INTO `student` (`id`, `name`, `tid`) VALUES ('3', '小张', '1'); 
+INSERT INTO `student` (`id`, `name`, `tid`) VALUES ('4', '小李', '1'); 
+INSERT INTO `student` (`id`, `name`, `tid`) VALUES ('5', '小王', '1');
+```
+
+#### **测试环境搭建**
+
+1. 导入lombok
+2. 新建实体类 Teacher Student
+3. 建立Mapper接口
+4. 建立Mapper.xml文件
+5. 在核心配置文件中绑定注册Mapoer
+6. 测试查询是否成功
+
+#### **按照查询嵌套处理**
+
+```xml
+<mapper namespace="com.lihe.dao.StudentMapper">
+    <!--
+    思路
+    1. 查询多有的学生信息
+    2. 根据查询出来的学生的tid寻找对应的老师
+    -->
+    <select id="getStudent" resultMap="StudentTeacher">
+        select * from student;
+    </select>
+
+    <resultMap id="StudentTeacher" type="Student">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <!-- f复杂的属性，我们需要单独处理
+           对象：association
+           集合：collection
+           -->
+        <association property="teacher" column="tid" javaType="Teacher" select="getTeacher"/>
+    </resultMap>
+
+    <select id="getTeacher" resultType="Teacher">
+        select * from teacher where id = #{id};
+    </select>
+</mapper>
+```
+
+#### **按照结果嵌套处理**
+
+
+
+回顾MySQL多对一查询方式：
+
+- 子查询
+- 连表查询
+
+
+
+## 11 一对多处理
+
+比如：一个老师拥有多个学生
+
+对于老师而言就是一对多的关系
+
+1. #### 环境搭建，和刚才一样
+
+   **实体类**
+
+   ```java
+   @Data
+   public class Teacher {
+       private int id;
+       private String name;
+   
+       // 一个老师拥有多个学生
+       private List<Student> students;
+   }
+   ```
+
+   ```java
+   @Data
+   public class Student {
+       private int id;
+       private String name;
+   
+       // 学生需要关联一个老师
+       private int tid;
+   }
+   ```
+
+
+
+#### 按照结果嵌套处理
+
+```xml
+<!-- 按照结果嵌套查询 -->
+<select id="getTeacher" resultMap="TeacherStudent">
+    SELECT s.id sid, s.name sname, t.name tname, t.id tid
+    FROM student s, teacher t
+    WHERE s.tid = t.id and t.id = #{tid};
+</select>
+<!-- f复杂的属性，我们需要单独处理
+   对象：association
+   集合：collection
+   javaType=“” 指定属性的类型
+   集合中的泛型信息，我们使用ofType
+   -->
+<resultMap id="TeacherStudent" type="Teacher">
+    <result property="id" column="tid"/>
+    <result property="name" column="tname"/>
+    <collection property="students" ofType="Student">
+        <result property="id" column="sid"/>
+        <result property="name" column="sname"/>
+        <result property="tid" column="tid"/>
+    </collection>
+</resultMap>
+```
+
+#### 按照查询嵌套处理
+
+```xml
+<select id="getTeacher2" resultMap="TeacherStudent2">
+    select * from teacher where id = #{tid};
+</select>
+
+<resultMap id="TeacherStudent2" type="Teacher">
+    <collection property="students" javaType="ArrayList" ofType="Student" select="getStudentByTeacherID" column="id"/>
+</resultMap>
+
+<select id="getStudentByTeacherID" resultType="Student">
+    select * from student where tid = #{tid};
+</select>
+```
+
+
+
+#### 小节
+
+1. 关联 - association 【多对一】
+2. 集合 - collection 【一对多】
+3. javaType & ofType
+   - javaType 用来指定实体类中的属性类型
+   - ofType 用来指定映射到List或者集合中的pojo类型，泛型中的约束类型！
+
+**注意点：**
+
+- 保证SQL的可读性，尽量保证通俗易懂
+- 注意一对多和多对一中，属性名和字段的问题
+- 如果问题不好排查错误，可以使用日志，建议使用Log4j
+
+
+
+慢SQL    1s 	1000s	不会写不要自己乱写，可以去网上查
+
+
+
+**面试高频：**
+
+- MySQL引擎
+- InnoDB底层原理
+- 索引
+- 索引优化
+
+
+
+## 动态SQL
+
+==什么是动态SQL：动态SQL就是指根据不同的条件生成不同的SQL语句==
+
+利用动态 SQL，可以彻底摆脱这种痛苦。你应该能理解根据不同条件拼接 SQL 语句有多痛苦
+
+如果你之前用过 JSTL 或任何基于类 XML 语言的文本处理器，你对动态 SQL 元素可能会感觉似曾相识。在 MyBatis 之前的版本中，需要花时间了解大量的元素。借助功能强大的基于 OGNL 的表达式，MyBatis 3 替换了之前的大部分元素，大大精简了元素种类，现在要学习的元素种类比原来的一半还要少。
+
+- if
+- choose (when, otherwise)
+- trim (where, set)
+- foreach
+
+#### 搭建环境
+
+```mysql
+CREATE TABLE `blog`(
+`id` VARCHAR(50) NOT NULL COMMENT '博客id',
+`title` VARCHAR(100) NOT NULL COMMENT '博客标题',
+`author` VARCHAR(30) NOT NULL COMMENT '博客作者',
+`create_time` DATETIME NOT NULL COMMENT '创建时间',
+`views` INT(30) NOT NULL COMMENT '浏览量'
+)ENGINE=INNODB DEFAULT CHARSET=utf8
+```
+
+创建个基础工程
+
+1. 导包
+
+2. 编写配置文件
+
+3. 编写实体类
+
+   ```java
+   @Data
+   public class Blog {
+       private int id;
+       private String title;
+       private String author;
+       private Date createTime;
+       private int views;
+   }
+   ```
+
+4. 编写实体类对应的接口和MApper.xml文件
+
+
+
+#### IF
+
+```xml
+<select id="queryBlogIF" parameterType="map" resultType="blog">
+    select * from mybatis.blog where 1 = 1
+    <if test="title != null">
+        and title = #{title}
+    </if>
+    <if test="author != null">
+        and author = #{author}
+    </if>
+</select>
+```
+
+#### trim(where, set )
+
+
+
+**所谓的动态SQL，还是SQL语句，只是我们可以在SQL层面去执行一些逻辑代码**
+
+if
+
+where， set ， choose， when
+
+
+
+Foreach
+
+SQL片段
+
+
+
+## 13 缓存
+
+### 13.1 简介
+
+==没有什么是加一层解决不了的==
+
+查询：连接数据库，耗资源！
+
+一次查询的结果，暂存在一个可以直接取到的地方！--> 内存   这就是缓存
+
+我们再次查询相同的数据的时候，直接走缓存，就不用走数据库了
+
+1. 什么是缓存[Cache]？
+   - 存在内存中的临时数据
+   - 将用户经常查询的数据放在缓存【内存】中，用户去查询数据就不用从磁盘上（关系型数据库数据文件）查询，从缓存中查询，从而提高查询效率，**解决了高并发系统的性能问题**。
+2. 为什么使用缓存？
+   - 减少和数据库交互次数，减少系统开销，提高系统效率。
+3. 什么样的数据能使用缓存？
+   - 经常查询并且不经常改变的数据。
+
+![image-20201004203250938](MyBatis.assets/image-20201004203250938.png)
+
+### 13.2 MyBatis缓存
+
+- MyBatis包含一个非常强大的查询缓存特性，他可以非常方便地定制和配置缓存。缓存可以极大地提高查询效率。
+- MyBatis系统中默认定义了两级缓存：**一级缓存**和**二级缓存**
+  - 默认情况下，只有一级缓存开启。（SqlSession级别的缓存，也成为了本地缓存，只在sqlSession开启和关闭之间有效）
+  - 二级缓存需要手动开启和配置，他是基于namespace级别的缓存（级别更高）
+  - 为了提高扩展性，MyBatis定义了缓存接口Cache，我们可以通过实现Cache接口来实现二级缓存
+
+
+
+13.3 

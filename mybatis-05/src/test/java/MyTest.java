@@ -19,4 +19,14 @@ public class MyTest {
         }
         sqlSession.close();
     }
+    @Test
+    public void getUserByID(){
+        SqlSession sqlSession = MyBatisUtils.getSqlSession();
+        // 底层主要应用反射
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        User user =  mapper.getUSerByID(1);
+
+        System.out.println(user);
+        sqlSession.close();
+    }
 }
